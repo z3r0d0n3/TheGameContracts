@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "./Utils.sol";
@@ -8,10 +9,13 @@ contract Randoms {
     
     Utils utils;
     Oracle oracle;
-    
+
+    uint nonce;
+
     modifier restricted {
-        for (uint i = 0; i < utils.getGameContracts().length; i++) {
-            if (msg.sender == utils.getGameContracts()[i]) {
+        address[] memory gameContracts = utils.getGameContracts();
+        for (uint i = 0; i < gameContracts.length; i++) {
+            if (msg.sender == gameContracts[i]) {
                 _;
                 return;
             }
@@ -23,8 +27,6 @@ contract Randoms {
         owner = msg.sender;
     }
     
-    uint nonce;
-
     function setUtilsOracleContract (address _utils, address _oracle) public {
         require(msg.sender == owner);
         utils = Utils(_utils);
@@ -47,7 +49,6 @@ contract Randoms {
         } else {
             nonce++;
         }
-
         return rand;
     }
     
@@ -72,14 +73,9 @@ contract Randoms {
             block.difficulty,
             msg.sender)
         )) % _mod;
-
         return rand;
     }
     
-    // function freeRandom(uint _mod) public view returns(uint) {
-    //     return _randMod(_mod);
-    // }
-
     function battleRandom(uint _start, uint _end, uint _iter) public view returns(uint) {
         _end = _end - _start;
         uint rand = uint(keccak256(abi.encodePacked(
@@ -262,7 +258,6 @@ contract Randoms {
             }
         }
         return (wtier, wtype, wquality, wdamage, wlevel, wstats);
-        
     }
     
     

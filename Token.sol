@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "./Utils.sol";
 
 contract GameToken is ERC20 {
-    Utils utils;    
-
     modifier restricted {
-        for (uint i = 0; i < utils.getGameContracts().length; i++) {
-            if (msg.sender == utils.getGameContracts()[i]) {
+        address[] memory gameContracts = utils.getGameContracts();
+        for (uint i = 0; i < gameContracts.length; i++) {
+            if (msg.sender == gameContracts[i]) {
                 _;
                 return;
             }
@@ -16,10 +16,8 @@ contract GameToken is ERC20 {
         revert();
     }
 
+    Utils utils;
     address public owner;
-    address character;
-    address weapon;
-
     uint public maxTotalSupply;
     
     constructor() ERC20("The Game Token", "TGT") {
@@ -31,12 +29,6 @@ contract GameToken is ERC20 {
     function setUtils(address _utils) public {
         require(msg.sender == owner);
         utils = Utils(_utils);
-    }
-
-    function setGameContracts(address _character, address _weapon) public {
-        require(msg.sender == owner);
-        character = _character;
-        weapon = _weapon;
     }
 
     function testMint(address account, uint256 amount) public {

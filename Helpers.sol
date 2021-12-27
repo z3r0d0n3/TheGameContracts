@@ -10,8 +10,9 @@ import "./Weapon.sol";
 
 contract Helpers {
     modifier restricted {
-        for (uint i = 0; i < utils.getGameContracts().length; i++) {
-            if (msg.sender == utils.getGameContracts()[i]) {
+        address[] memory gameContracts = utils.getGameContracts();
+        for (uint i = 0; i < gameContracts.length; i++) {
+            if (msg.sender == gameContracts[i]) {
                 _;
                 return;
             }
@@ -144,7 +145,6 @@ contract Helpers {
             (uint weaponTier, uint weaponType, uint weaponQuality, uint weaponDamage, uint weaponLevel, uint[4][3] memory weaponPerks) = random.rollWeaponData();
             weapon._mintWeapon(weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
         }
-
     }
 
 }
