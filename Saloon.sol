@@ -223,6 +223,9 @@ contract Saloon {
         if (data[5] <= duelist.getHealthPoints(_attackerIds[0])) {
             duelist.drainHealth(_attackerIds[0], data[5]);
         }
+        // TODO claim exp
+//        duelist.claimExp(_attackerIds[0], (duelist.experienceTable(attacker.level) / 100) * oracle.ExpMultiplier ) // count damage + win or loss multiplier
+//        duelist.claimExp(_deffenderIds[0], )
         duelist.drainEnergy(_attackerIds[0], 20);
         duelist.setPvPData(_attackerIds[0], attCoins[0], attCoins[1], playersPvp[0], attacker.withdrawTimestamp, duelTimestamps[0]);
         duelist.setPvPData(_deffenderIds[0], deffCoins[0], deffCoins[1], playersPvp[1], deffender.withdrawTimestamp, duelTimestamps[1]);
@@ -241,18 +244,20 @@ contract Saloon {
         require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin));
         require(msg.sender == duelist.ownerOf(_id));
         Duelist.Character memory char = duelist.getCharData(_id);
-        require(char.coins > 0);
+        require(char.coins > 0 && char.pvp == false);
         uint fee = 0;
         if (block.timestamp < char.withdrawTimestamp) {
             fee = (char.withdrawTimestamp - block.timestamp)/60/60/24;
         }
         uint coins = char.coins - utils.percentage(char.coins, fee);
         uint feeCoins = char.coins - coins;
-        duelist.setPvPData(_id, char.mintCoins, 0, char.pvp, block.timestamp + 10 days, char.duelTimestamp);
-        if (feeCoins > 0) {            
-            token.transferFrom(address(this), treasure_addr, feeCoins*1e18);
+        duelist.setPvPData(_id, char.mintCoins, 0, char.pvp, block.timestamp + oracle.withdrawFeeDays(), char.duelTimestamp);
+        if (feeCoins > 0) {
+//            token.transferFrom(address(this), treasure_addr, feeCoins*1e18);
+            token.transfer(treasure_addr, feeCoins*1e18);
             treasury.updateRewards(feeCoins);
         }
-        token.transferFrom(address(this), msg.sender, coins*1e18);
+//        token.transferFrom(address(this), msg.sender, coins*1e18);
+        token.transfer(msg.sender, coins*1e18);
     }
 }

@@ -28,6 +28,10 @@ contract Oracle {
     
     uint public PvPLevelDifference = 1;
 
+    uint public withdrawFeeDays = 10 days;
+
+    uint public ShardsWeaponMintPriceMultiplier = 3;
+
     // Features Market
     uint public ReceivedShardsPerWeapon = 1000;
     uint public CharPerksResetPriceTokens = 1000;
@@ -93,6 +97,9 @@ contract Oracle {
     function setBattleReward(uint _price) external restricted {
         battleReward = _price;
     }
+    function setWithdrawFees(uint _days) external restricted {
+        withdrawFeeDays = _days;
+    }
     
     function setSmallDisclosureFee(uint _fee) external restricted {
         smallPvPDisclosureFee = _fee;
@@ -112,7 +119,10 @@ contract Oracle {
     function setReceivedShardsPerWeapon(uint _shards) external restricted {
         ReceivedShardsPerWeapon = _shards;
     }
-    
+    function setShardsWeaponMintPriceMultiplier(uint _multiplier) external restricted {
+        ShardsWeaponMintPriceMultiplier = _multiplier;
+    }
+
     function incrementRand() external restricted {
         if (rand == 115792089237316195423570985008687907853269984665640564039457584007913129639935) {
             incrementRrand();

@@ -48,37 +48,24 @@ contract DuelWeapon is ERC721Enumerable {
         uint[4][3] perks;
     }
     mapping(uint => Weapon) weapons;
-    
 
-    // event NewWeapon(uint256 indexed weapon, address indexed minter);
-    
-
-    constructor () ERC721("TheGameWeapons", "TGW") { // public address _utils, address _oracle, address _random, address _token, address _treasury, address _marketplace
+    constructor () ERC721("TheGameWeapons", "TGW") {
         owner = msg.sender;
-//        utils = Utils(_utils);
-//        oracle = Oracle(_oracle);
-//        random = Randoms(_random);
-//        token = ERC20(_token);
-//        treasury = Treasury(_treasury);
-//        treasury_addr = _treasury;
-//        marketplace = _marketplace;
-//        featuresMarket
     }
 
-     function setContracts (address _utils, address _oracle, address _random, address _token, address _treasury, address _marketplace, address _featuresMarket) public {
-         require(msg.sender == owner);
-         utils = Utils(_utils);
-         oracle = Oracle(_oracle);
-         random = Randoms(_random);
-         token = ERC20(_token);
-         treasury = Treasury(_treasury);
-         treasury_addr = _treasury;
-         marketplace = _marketplace;
-         featuresMarket = FeaturesMarket(_featuresMarket);
-     }
-    
-     function _mintWeapon(uint _tier, uint _type, uint _quality, uint _damage, uint _level, uint[4][3] memory _perks) public restricted {
-//        uint id = index;
+    function setContracts (address _utils, address _oracle, address _random, address _token, address _treasury, address _marketplace, address _featuresMarket) public {
+        require(msg.sender == owner);
+        utils = Utils(_utils);
+        oracle = Oracle(_oracle);
+        random = Randoms(_random);
+        token = ERC20(_token);
+        treasury = Treasury(_treasury);
+        treasury_addr = _treasury;
+        marketplace = _marketplace;
+        featuresMarket = FeaturesMarket(_featuresMarket);
+    }
+
+    function __mintWeapon(address _owner, uint _tier, uint _type, uint _quality, uint _damage, uint _level, uint[4][3] memory _perks) private {
         Weapon memory new_weapon;
         new_weapon.index = index;
         new_weapon.pvp = false;
@@ -89,12 +76,17 @@ contract DuelWeapon is ERC721Enumerable {
         new_weapon.perks = _perks;
         new_weapon.level = _level;
         weapons[index] = new_weapon;
-        _mint(msg.sender, index);
+        _mint(_owner, index);
         setApprovalForAll(marketplace, true);
         // emit NewWeapon(id, msg.sender);
         index++;
     }
-    
+
+    function _mintWeapon(address _owner, uint _tier, uint _type, uint _quality, uint _damage, uint _level, uint[4][3] memory _perks) public restricted {
+        __mintWeapon(_owner, _tier, _type, _quality, _damage, _level, _perks);
+    }
+
+
     function getWeaponsOwnedBy(address _owner) public view returns(Weapon[] memory) { 
         require(msg.sender == _owner);
         Weapon[] memory wpns = new Weapon[](balanceOf(_owner));
@@ -131,11 +123,11 @@ contract DuelWeapon is ERC721Enumerable {
         mergedPerks = utils.sumAttributes(mergedPerks, w3.perks);
 
         uint newWeaponTier = w1.tier + 1;
-        uint newWeaponDamage = ((w1.damage + w2.damage + w3.damage) / 3) + utils.percentage(((w1.damage + w2.damage + w3.damage)/3), 33);
+        uint newWeaponDamage = ((w1.damage + w2.damage + w3.damage) / 3) + utils.percentage(((w1.damage + w2.damage + w3.damage) / 3), 33);
         _burn(_weaponIdsToMerge[0]);
         _burn(_weaponIdsToMerge[1]);
         _burn(_weaponIdsToMerge[2]);
-        _mintWeapon(newWeaponTier, w1.wtype, w1.quality, newWeaponDamage, w1.level, mergedPerks);
+        __mintWeapon(msg.sender, newWeaponTier, w1.wtype, w1.quality, newWeaponDamage, w1.level, mergedPerks);
     }
     
     function setPvPData(uint _weaponId, bool _pvp) external restricted {
@@ -145,14 +137,18 @@ contract DuelWeapon is ERC721Enumerable {
 
     function sellWeaponForShards(uint _weaponId) public {
         require(ownerOf(_weaponId) == msg.sender);
+        Weapon memory w = weapons[_weaponId];
+        require(w.pvp == false);
+
         _burn(_weaponId);
         featuresMarket.addShardsToPlayer(msg.sender, oracle.ReceivedShardsPerWeapon());
     }
 
     function mintWeaponWithShards() public {
-        require(featuresMarket.shardsPerAddress(msg.sender) >= oracle.ReceivedShardsPerWeapon()*3);
-        featuresMarket.removeShardsFromPlayer(msg.sender, oracle.ReceivedShardsPerWeapon()*3);
+        uint mintPrice = oracle.ReceivedShardsPerWeapon()*oracle.ShardsWeaponMintPriceMultiplier();
+        require(featuresMarket.shardsPerAddress(msg.sender) >= mintPrice);
+        featuresMarket.removeShardsFromPlayer(msg.sender, mintPrice);
         (uint weaponTier, uint weaponType, uint weaponQuality, uint weaponDamage, uint weaponLevel, uint[4][3] memory weaponPerks) = random.rollWeaponData();
-        _mintWeapon(weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
+        __mintWeapon(msg.sender, weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
     }
 }

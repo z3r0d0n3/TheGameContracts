@@ -9,9 +9,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "./Utils.sol";
 import "./Oracle.sol";
-// import "./Saloon.sol";
-// import "./Token.sol";
-
 
 contract Duelist is ERC721Enumerable {
     
@@ -107,16 +104,23 @@ contract Duelist is ERC721Enumerable {
         new_char.healthTimestamp = uint(block.timestamp - (new_char.maxHealth*new_char.secondsPerHealth));
         new_char.energyTimestamp = uint(block.timestamp - (new_char.maxEnergy*secondsPerEnergy));
         new_char.duelTimestamp = uint(block.timestamp);
-        new_char.withdrawTimestamp = uint(block.timestamp + 10 days);
+        new_char.withdrawTimestamp = uint(block.timestamp + oracle.withdrawFeeDays());
         new_char.level = 1;
         new_char.exp = 0;
         new_char.attribute_points = 3;
         new_char.skill_points = 9;
-        for (uint i = 0; i < new_char.attributes.length; i ++) {
-            for (uint j = 0; j < new_char.attributes[i].length; j++) {
+        // TODO clean this code, export function to helpers
+        for (uint i = 0; i < 3; i ++) {
+            for (uint j = 0; j < 4; j++) {
                 new_char.attributes[i][j] = 1;
             }
         }
+        for (uint i = 0; i < 4; i++) {
+            for (uint j = 0; j < 5; j++) {
+                new_char.defensive_points[i][j] = 1;
+            }
+        }
+
         characters[index] = new_char;
         _mint(msg.sender, index);
         // _setTokenUri

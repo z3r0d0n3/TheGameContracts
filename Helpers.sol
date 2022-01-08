@@ -112,7 +112,8 @@ contract Helpers {
                 }
             }
             require(local_sum == 2);
-            require(((_defPoints[i][0] == 1 && _defPoints[i][1] == 1) || (_defPoints[i][4] == 1 && _defPoints[i][3] == 1) || (_defPoints[i][4] == 1 && _defPoints[i][1] == 1)) || local_sum == 5);
+            // debug
+//            require(((_defPoints[i][0] == 1 && _defPoints[i][1] == 1) || (_defPoints[i][4] == 1 && _defPoints[i][3] == 1) || (_defPoints[i][4] == 1 && _defPoints[i][1] == 1)));
         }
         duelist.setCharOffDefPoints(_charId, _offPoints, _defPoints);
 
@@ -143,7 +144,7 @@ contract Helpers {
 
         for (uint i = 0; i < _n; i++) {
             (uint weaponTier, uint weaponType, uint weaponQuality, uint weaponDamage, uint weaponLevel, uint[4][3] memory weaponPerks) = random.rollWeaponData();
-            weapon._mintWeapon(weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
+            weapon._mintWeapon(msg.sender, weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
         }
     }
 

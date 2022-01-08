@@ -159,7 +159,8 @@ contract Treasury {
         // msg.sender.transfer
         
         uint playerReward = reward[week]*1e18*(id+1)/5050;
-        token.transferFrom(address(this), msg.sender, playerReward);
+//        token.transferFrom(address(this), msg.sender, playerReward);
+        token.transfer(msg.sender, playerReward);
 
     }
 
