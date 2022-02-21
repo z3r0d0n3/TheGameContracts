@@ -13,15 +13,19 @@ contract Randoms {
     uint nonce;
 
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
     
     constructor() {
         owner = msg.sender;

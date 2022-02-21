@@ -11,15 +11,19 @@ import "./Weapon.sol";
 
 contract FeaturesMarket {
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
 
     address owner;
     Utils utils;
@@ -65,6 +69,11 @@ contract FeaturesMarket {
     function _resetCharPerks(uint _charId) private {
         Duelist.Character memory char = duelist.getCharData(_charId);
         uint[4][3] memory _perks;
+        for (uint i = 0; i < 3; i ++) {
+            for (uint j = 0; j < 4; j++) {
+                _perks[i][j] = 1;
+            }
+        }
         uint _maxHealth = 270 + char.level * 30;
         uint _secondsPerHealth = duelist.fullTimeHp() / _maxHealth;
         uint _attributePoints = char.level * 3;
@@ -239,4 +248,12 @@ contract FeaturesMarket {
         (Duelist.Character memory opponent, DuelWeapon.Weapon memory opponentWpn) = PvPOpponentDisclosure(msg.sender, disclosureFee, _opponentLobbyId);
         return (opponent.level, opponent.maxHealth, opponent.attributes[2][1], opponent.attributes[1][1], opponentWpn.quality, opponentWpn.tier, opponentWpn.damage, opponentWpn.wtype);
     }
+
+    // TODO add gems improvements for weapons
+    // common gem +1 perk 60 %
+    // rare gem +1 attribute 30 %
+    // legendary gem +3 attributes 10 %
+
+    // gems can be bought in features market with shards and tokens
+    
 }

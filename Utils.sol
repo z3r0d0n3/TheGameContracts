@@ -1,51 +1,70 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 contract Utils {
     address public owner;
-    address[] public GameContracts;
+    // address[] public GameContracts;
+
+    mapping(address => bool) public GameContracts;
 
     constructor () {
         owner = msg.sender;
     }
 
     modifier restricted {
-        for (uint i = 0; i < GameContracts.length; i++) {
-            if (msg.sender == GameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(GameContracts[msg.sender] == true);
+        _;
     }
+    // function f(address target, uint contractType) restrictTargetType(target, contractType) {
+    //     ....
+    // }
+
+    // modifier restricted {
+    //     for (uint i = 0; i < GameContracts.length; i++) {
+    //         if (msg.sender == GameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
    
-    function getGameContractsLength() external view restricted returns (uint256) {
-        return GameContracts.length;
-    }
+    // function getGameContractsLength() external view restricted returns (uint256) {
+    //     return GameContracts.length;
+    // }
     
-    function getGameContracts() external view restricted returns (address[] memory)  {
-        return GameContracts;
-    }
+    // function getGameContracts() external view restricted returns (address[] memory)  {
+    //     return GameContracts;
+    // }
     
+    // function addContract (address _contract) public {
+    //     require(msg.sender == owner);
+    //     GameContracts.push(_contract);
+    // }
     function addContract (address _contract) public {
         require(msg.sender == owner);
-        GameContracts.push(_contract);
+        GameContracts[_contract] = true;
     }
     
-    function removeContract (address _contract) public {
+    function removeContract(address _contract) public {
         require(msg.sender == owner);
-        uint index;
-        for (uint i = 0; i < GameContracts.length; i++) {
-            if (GameContracts[i] == _contract) {
-                index = i;
-            }
-        }
-
-        for (uint i = index; i < GameContracts.length-1; i++){
-            GameContracts[i] = GameContracts[i+1];
-        }
-        GameContracts.pop();
-
+        GameContracts[_contract] = false;
     }
+    
+    // function removeContract (address _contract) public {
+    //     require(msg.sender == owner);
+    //     uint index;
+    //     for (uint i = 0; i < GameContracts.length; i++) {
+    //         if (GameContracts[i] == _contract) {
+    //             index = i;
+    //         }
+    //     }
+
+    //     for (uint i = index; i < GameContracts.length-1; i++){
+    //         GameContracts[i] = GameContracts[i+1];
+    //     }
+    //     GameContracts.pop();
+    // }
     
     function averagePercentageDiff(int a, int b) public pure returns (uint, uint) {
         int[2] memory attDeffBonus; // 0 attacker, 1 deffender
@@ -84,13 +103,13 @@ contract Utils {
         return totalCharacterAttr;
     }
     
-    function percentage (uint _amount, uint _percentage) public pure returns (uint) {
+    function percentage (uint _amount, uint _percentage) external pure returns (uint) {
         _percentage = _percentage * 100;
         return _amount * _percentage / 10000;
     }
 
     
-    function isContract(address addr) public view returns (bool) {
+    function isContract(address addr) external view returns (bool) {
         bytes32 accountHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
     
         bytes32 codehash;

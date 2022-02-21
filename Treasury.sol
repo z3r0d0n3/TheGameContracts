@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Utils.sol";
 
-contract Treasury {
+contract Treasury is ReentrancyGuard {
     address owner;
     
     // using Counters for Counters.Counter;
@@ -14,16 +14,19 @@ contract Treasury {
 
     Utils utils;
     ERC20 token;
-
     modifier restricted {
-        for (uint i = 0; i < utils.getGameContracts().length; i++) {
-            if (msg.sender == utils.getGameContracts()[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     for (uint i = 0; i < utils.getGameContracts().length; i++) {
+    //         if (msg.sender == utils.getGameContracts()[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
 
      constructor() {
         owner = msg.sender;
@@ -49,7 +52,6 @@ contract Treasury {
     mapping(uint => uint) public reward;
     mapping(uint => mapping(uint => Participant)) public participants;
     mapping(uint => mapping(address => WeeklyStatistics)) public battleWeeks;
-
 
     function setContracts(address _utils, address _token) public {
         require(msg.sender == owner);
@@ -92,13 +94,14 @@ contract Treasury {
     function submitScore() public {
         require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin));
         uint week = getCurrentWeek();
-        require(block.timestamp > ((week + 1)*604800) - 86400 && block.timestamp < ((week + 1)*604800) - 43200);
+        require(block.timestamp > (((week + 1)*604800) - 86400) && block.timestamp < ((week + 1)*604800)); //  - 43200
         require(battleWeeks[week][msg.sender].submitted == false && battleWeeks[week][msg.sender].claimed == false);
         battleWeeks[week][msg.sender].total = addressToStats[msg.sender].total;
         battleWeeks[week][msg.sender].won = addressToStats[msg.sender].won;
         battleWeeks[week][msg.sender].lost = addressToStats[msg.sender].lost;
         battleWeeks[week][msg.sender].draw = addressToStats[msg.sender].draw;
         battleWeeks[week][msg.sender].profit = addressToStats[msg.sender].profit;
+        battleWeeks[week][msg.sender].submitted = true;
         // sort rewards table
         // check if > 0 element of rewards for this week 
         Participant[] memory test;
@@ -141,13 +144,11 @@ contract Treasury {
             // return arr;
     }
 
-    function claimReward(uint week, uint id) public {
-        require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin)); // 
-//        uint week = getCurrentWeek();
-//        require(block.timestamp > ((week + 1)*604800) - 43200 && block.timestamp < ((week + 1)*604800));
+    function claimReward(uint week, uint id) public nonReentrant {
+        require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin));
+        require(block.timestamp > ((week + 1)*604800)); // - 43200
         require(battleWeeks[week][msg.sender].submitted == true && battleWeeks[week][msg.sender].claimed == false);
         require(msg.sender == participants[week][id].player && participants[week][id].claimed == false);
-        
         addressToStats[msg.sender].total = 0;
         addressToStats[msg.sender].won = 0;
         addressToStats[msg.sender].lost = 0;
@@ -155,18 +156,16 @@ contract Treasury {
         addressToStats[msg.sender].profit = 0;
         battleWeeks[week][msg.sender].claimed == true;
         participants[week][id].claimed == true;
-        // transfer tokens to player
-        // msg.sender.transfer
-        
         uint playerReward = reward[week]*1e18*(id+1)/5050;
-//        token.transferFrom(address(this), msg.sender, playerReward);
         token.transfer(msg.sender, playerReward);
-
     }
 
     function getCurrentWeek() public view returns (uint) {
-        // uint dateNow = block.timestamp;
         return block.timestamp / 604800; // 1 week in seconds        
+    }
+
+    function getPreviousWeek() public view returns (uint) {
+        return block.timestamp / 604800 - 1; // 1 week in seconds        
     }
 
     function getCurrentDay() public view returns (uint) {

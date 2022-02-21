@@ -6,15 +6,19 @@ import "./Utils.sol";
 
 contract GameToken is ERC20 {
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
 
     Utils utils;
     address public owner;

@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./Utils.sol";
 import "./Oracle.sol";
 import "./Token.sol";
-
-
+import "./Duelist.sol";
+import "./Weapon.sol";
 
 contract TheGameMarket is ReentrancyGuard {
   using Counters for Counters.Counter;
@@ -21,6 +21,8 @@ contract TheGameMarket is ReentrancyGuard {
   Utils utils;
   Oracle oracle;
   GameToken token;
+  Duelist duelist;
+  DuelWeapon weapon;
 
   constructor() {
     owner = payable(msg.sender);
@@ -56,11 +58,13 @@ contract TheGameMarket is ReentrancyGuard {
     bool sold
   );
 
-  function setContracts(address _utils, address _oracle, address _token) public {
+  function setContracts(address _utils, address _oracle, address _token, address _duelist, address _weapon) public {
       require(msg.sender == owner);
       utils = Utils(_utils);
       oracle = Oracle(_oracle);
-      token = GameToken(_token);      
+      token = GameToken(_token);
+      duelist = Duelist(_duelist);
+      weapon = DuelWeapon(_weapon);
   }
   /* Returns the listing price of the contract */
   function getListingFee(uint _listingPrice) public view returns (uint256) {
@@ -77,6 +81,14 @@ contract TheGameMarket is ReentrancyGuard {
     uint256 tokenId,
     uint256 price
   ) public payable nonReentrant {
+    if (nftContract == address(duelist)) {
+      Duelist.Character memory char = duelist.getCharData(tokenId);
+      require(char.pvp == false);
+    } else if (nftContract == address(weapon)) {
+      DuelWeapon.Weapon memory wpn = weapon.getWeaponData(tokenId);
+      require(wpn.pvp == false);
+    }
+    require(IERC721(nftContract).ownerOf(tokenId) == msg.sender);
     require(price > 0, "Price must be at least 1 wei");
     uint listingFee = getListingFee(price);
     require(token.balanceOf(msg.sender) >= listingFee, "Price must be equal to listing price");

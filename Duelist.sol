@@ -13,21 +13,25 @@ import "./Oracle.sol";
 contract Duelist is ERC721Enumerable {
     
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
     
     Utils utils;
     ERC20 token;
     Oracle oracle;
 
-    uint[25] public experienceTable = [1000];
+    uint[60] public experienceTable = [1000];
     uint public constant secondsPerEnergy = 288; //5 * 60
     uint public constant fullTimeHp = 28800; // seconds // 60 * 60 * 8; // 8 hours TODO rename
 
@@ -61,8 +65,7 @@ contract Duelist is ERC721Enumerable {
 
         uint[4][3] attributes; 
         uint[5][4] defensive_points;
-        uint[5][4] ofensive_points;
-        
+        uint[5][4] ofensive_points;        
     }    
 
     // mapping(address => uint[]) public tokenIds;
@@ -85,7 +88,6 @@ contract Duelist is ERC721Enumerable {
         token = ERC20(_token);
         saloon = _saloon;
         marketplace = _marketplace;
-
     }
     
     function mintCharacter() public {
@@ -110,16 +112,16 @@ contract Duelist is ERC721Enumerable {
         new_char.attribute_points = 3;
         new_char.skill_points = 9;
         // TODO clean this code, export function to helpers
-        for (uint i = 0; i < 3; i ++) {
-            for (uint j = 0; j < 4; j++) {
-                new_char.attributes[i][j] = 1;
-            }
-        }
-        for (uint i = 0; i < 4; i++) {
-            for (uint j = 0; j < 5; j++) {
-                new_char.defensive_points[i][j] = 1;
-            }
-        }
+        // for (uint i = 0; i < 3; i ++) {
+        //     for (uint j = 0; j < 4; j++) {
+        //         new_char.attributes[i][j] = 1;
+        //     }
+        // }
+        // for (uint i = 0; i < 4; i++) {
+        //     for (uint j = 0; j < 5; j++) {
+        //         new_char.defensive_points[i][j] = 1;
+        //     }
+        // }
 
         characters[index] = new_char;
         _mint(msg.sender, index);

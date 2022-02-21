@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./Randoms.sol";
 import "./Utils.sol";
 import "./Oracle.sol";
@@ -26,15 +25,8 @@ contract DuelWeapon is ERC721Enumerable {
     uint index = 1;
 
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
     
     struct Weapon {
@@ -82,10 +74,9 @@ contract DuelWeapon is ERC721Enumerable {
         index++;
     }
 
-    function _mintWeapon(address _owner, uint _tier, uint _type, uint _quality, uint _damage, uint _level, uint[4][3] memory _perks) public restricted {
+    function _mintWeapon(address _owner, uint _tier, uint _type, uint _quality, uint _damage, uint _level, uint[4][3] memory _perks) external restricted {
         __mintWeapon(_owner, _tier, _type, _quality, _damage, _level, _perks);
     }
-
 
     function getWeaponsOwnedBy(address _owner) public view returns(Weapon[] memory) { 
         require(msg.sender == _owner);
@@ -95,7 +86,6 @@ contract DuelWeapon is ERC721Enumerable {
             Weapon storage currentItem = weapons[wid];
             wpns[i] = currentItem;
         }
-
         return wpns;    
     }
 
@@ -104,30 +94,9 @@ contract DuelWeapon is ERC721Enumerable {
         return w;
     }
     
-    function mergeWeapons(uint[3] memory _weaponIdsToMerge) public {
-        uint reforgePrice = oracle.reforgePrice();
-        require(_weaponIdsToMerge[0] < _weaponIdsToMerge[1] && _weaponIdsToMerge[1] < _weaponIdsToMerge[2] && token.balanceOf(msg.sender) >= reforgePrice*1e18);
-        require(ownerOf(_weaponIdsToMerge[0]) == msg.sender && ownerOf(_weaponIdsToMerge[1]) == msg.sender && ownerOf(_weaponIdsToMerge[2]) == msg.sender);
-        require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin));
-        Weapon memory w1 = weapons[_weaponIdsToMerge[0]];
-        Weapon memory w2 = weapons[_weaponIdsToMerge[1]];
-        Weapon memory w3 = weapons[_weaponIdsToMerge[2]];
-        require(w1.pvp == false && w2.pvp == false && w3.pvp == false);
-        require(w1.tier == w2.tier && w2.tier == w3.tier);
-        require(w1.wtype == w2.wtype && w2.wtype == w3.wtype);
-        require(w1.quality == w2.quality && w2.quality == w3.quality);
-        token.transferFrom(msg.sender, treasury_addr, reforgePrice*1e18);
-        treasury.updateRewards(reforgePrice);
 
-        uint[4][3] memory mergedPerks = utils.sumAttributes(w1.perks, w2.perks);
-        mergedPerks = utils.sumAttributes(mergedPerks, w3.perks);
-
-        uint newWeaponTier = w1.tier + 1;
-        uint newWeaponDamage = ((w1.damage + w2.damage + w3.damage) / 3) + utils.percentage(((w1.damage + w2.damage + w3.damage) / 3), 33);
-        _burn(_weaponIdsToMerge[0]);
-        _burn(_weaponIdsToMerge[1]);
-        _burn(_weaponIdsToMerge[2]);
-        __mintWeapon(msg.sender, newWeaponTier, w1.wtype, w1.quality, newWeaponDamage, w1.level, mergedPerks);
+    function burnWeapon(uint wpnId) external restricted {
+        _burn(wpnId);
     }
     
     function setPvPData(uint _weaponId, bool _pvp) external restricted {
@@ -135,20 +104,52 @@ contract DuelWeapon is ERC721Enumerable {
         weapon.pvp = _pvp;
     }
 
-    function sellWeaponForShards(uint _weaponId) public {
-        require(ownerOf(_weaponId) == msg.sender);
-        Weapon memory w = weapons[_weaponId];
-        require(w.pvp == false);
+    function sellWeaponForShards(uint[] memory _weaponIds) public {
+        for (uint i = 0; i < _weaponIds.length; i++) {
+            require(ownerOf(_weaponIds[i]) == msg.sender);
+            Weapon memory w = weapons[_weaponIds[i]];
+            require(w.pvp == false);
+            _burn(_weaponIds[i]);
+            featuresMarket.addShardsToPlayer(msg.sender, oracle.ReceivedShardsPerWeapon());
+        }
+    }   
+    
 
-        _burn(_weaponId);
-        featuresMarket.addShardsToPlayer(msg.sender, oracle.ReceivedShardsPerWeapon());
+    function mintTestWeapon() public {
+        uint[4][3] memory weaponPerks;
+        __mintWeapon(msg.sender, 0, 0, 0, 50, 0, weaponPerks);
+        __mintWeapon(msg.sender, 0, 1, 0, 50, 0, weaponPerks);
     }
 
-    function mintWeaponWithShards() public {
-        uint mintPrice = oracle.ReceivedShardsPerWeapon()*oracle.ShardsWeaponMintPriceMultiplier();
-        require(featuresMarket.shardsPerAddress(msg.sender) >= mintPrice);
-        featuresMarket.removeShardsFromPlayer(msg.sender, mintPrice);
-        (uint weaponTier, uint weaponType, uint weaponQuality, uint weaponDamage, uint weaponLevel, uint[4][3] memory weaponPerks) = random.rollWeaponData();
-        __mintWeapon(msg.sender, weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
+    function mintWeaponsN (uint _n) public {
+        require(!utils.isContract(msg.sender) && !utils.isContract(tx.origin));
+        uint priceFor1Weapon = oracle.weapon1MintPrice();
+        uint priceFor5Weapons = oracle.weapon5MintPrice();
+        uint priceFor10Weapons = oracle.weapon10MintPrice();
+        if (_n == 5) {
+            // require(token.balanceOf(msg.sender) >= priceFor5Weapons*1e18);
+            token.transferFrom(msg.sender, treasury_addr, priceFor5Weapons*1e18);
+            treasury.updateRewards(priceFor5Weapons);
+        } else if (_n == 10) {
+            // require( token.balanceOf(msg.sender) >= priceFor10Weapons*1e18);
+            token.transferFrom(msg.sender, treasury_addr, priceFor10Weapons*1e18);
+            treasury.updateRewards(priceFor10Weapons);
+        } else {
+            // require(token.balanceOf(msg.sender) >= _n * priceFor1Weapon*1e18);
+            token.transferFrom(msg.sender, treasury_addr, _n * priceFor1Weapon*1e18);
+            treasury.updateRewards(_n * priceFor1Weapon);
+        }
+        for (uint i = 0; i < _n; i++) {
+            (uint weaponTier, uint weaponType, uint weaponQuality, uint weaponDamage, uint weaponLevel, uint[4][3] memory weaponPerks) = random.rollWeaponData();
+            __mintWeapon(msg.sender, weaponTier, weaponType, weaponQuality, weaponDamage, weaponLevel, weaponPerks);
+        }
     }
+
+    // TODO add gems improvements for weapons
+    // common gem +1 perk 60 %
+    // rare gem +1 attribute 30 %
+    // legendary gem +3 attributes 10 %
+
+    // gems can be bought in features market with shards and tokens
+    
 }

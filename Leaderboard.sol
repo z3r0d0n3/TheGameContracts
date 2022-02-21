@@ -6,16 +6,20 @@ import "./Utils.sol";
 contract Leaderboard {
     Utils utils;
     address owner;
-    modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+    modifier restricted(address requester) {
+        require(utils.GameContracts(requester) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
 
 //    struct Statistics {
 //        uint total;

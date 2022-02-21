@@ -15,15 +15,9 @@ contract Saloon {
     event UpdateLobby(uint id, address _owner, bool isActive); // , uint losesCountert
     event BattleE(address playerAddress, bool attacking, uint playerCharId, uint currentWeek, uint winnerCharId, uint[48] parsedRounds, uint now, uint knockout, uint draw);
 
-    modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+    modifier restricted(address requester) {
+        require(utils.GameContracts(requester) == true);
+        _;
     }
 
     uint _duelLobbyIds = 1;

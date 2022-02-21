@@ -55,14 +55,19 @@ contract Oracle {
     uint public mediumPvPDisclosureFee = 50;
     uint public bigPvPDisclosureFee = 75;
 
+    // modifier restricted {
+    //     for (uint i = 0; i < utils.getGameContracts().length; i++) {
+    //         if (msg.sender == utils.getGameContracts()[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
+
     modifier restricted {
-        for (uint i = 0; i < utils.getGameContracts().length; i++) {
-            if (msg.sender == utils.getGameContracts()[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
     
     constructor() {

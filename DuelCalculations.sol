@@ -9,15 +9,19 @@ import "./Utils.sol";
 
 contract PvPGameplay {
     modifier restricted {
-        address[] memory gameContracts = utils.getGameContracts();
-        for (uint i = 0; i < gameContracts.length; i++) {
-            if (msg.sender == gameContracts[i]) {
-                _;
-                return;
-            }
-        }
-        revert();
+        require(utils.GameContracts(msg.sender) == true);
+        _;
     }
+    // modifier restricted {
+    //     address[] memory gameContracts = utils.getGameContracts();
+    //     for (uint i = 0; i < gameContracts.length; i++) {
+    //         if (msg.sender == gameContracts[i]) {
+    //             _;
+    //             return;
+    //         }
+    //     }
+    //     revert();
+    // }
     address owner;
 
     Duelist public duelist;
@@ -54,7 +58,7 @@ contract PvPGameplay {
         Duelist.Character memory deffender = getCharData(_deffenderId);
         uint[3][16] memory rounds;
         uint roundslen = 0;
-        for (uint r = 0; r < 2; r++) {
+        // for (uint r = 0; r < 2; r++) {
             for (uint i = 0; i < attacker.ofensive_points.length; i++) {
                 for (uint j = 0; j < deffender.defensive_points[i].length; j++) {
                     if (attacker.ofensive_points[i][j] == 1 && deffender.defensive_points[i][j] == 1) {
@@ -123,7 +127,7 @@ contract PvPGameplay {
                 }
                 roundslen = roundslen + 2;
             }
-        }
+        // }
         return (rounds, [attacker, deffender]);
     }
     // 0,0 strength;
